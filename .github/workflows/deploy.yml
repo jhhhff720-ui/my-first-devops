@@ -7,15 +7,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Login Docker Hub
+
+    - name: Login Docker Hub (GitHub Runner)
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_USER }}
         password: ${{ secrets.DOCKER_PASS }}
+
     - name: Build and Push
       run: |
         docker build -t zdzdevops/myapp:latest .
         docker push zdzdevops/myapp:latest
+
     - name: SSH Deploy
       uses: appleboy/ssh-action@v1
       with:
@@ -23,7 +26,18 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
+          # 1. 在 Ubuntu 服务器上登录 Docker Hub (解决 403 Forbidden 关键点)
+          echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+          
+          # 2. 拉取镜像 (如果配置了镜像加速器，速度会更快)
           docker pull zdzdevops/myapp:latest
+          
+          # 3. 停止并清理旧容器
           docker stop myapp || true
           docker rm myapp || true
+          
+          # 4. 启动新容器
           docker run -d --name myapp -p 80:5000 zdzdevops/myapp:latest
+          
+          # 5. 清理多余镜像 (可选，防止服务器磁盘爆满)
+          docker image prune -f
