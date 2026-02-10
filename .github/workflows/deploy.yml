@@ -20,7 +20,6 @@ jobs:
 
     - name: 构建并推送镜像
       run: |
-        # 修正用户名为 zdzdevops
         docker build -t zdzdevops/myapp:latest .
         docker push zdzdevops/myapp:latest
 
@@ -34,7 +33,4 @@ jobs:
           docker pull zdzdevops/myapp:latest
           docker stop myapp || true
           docker rm myapp || true
-          docker run -d \
-            --name myapp \
-            -p 80:5000 \
-            zdzdevops/myapp:latest
+          docker run -d --name myapp -p 80:5000 zdzdevops/myapp:latest
